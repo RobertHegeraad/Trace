@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
+    <title></title>
+
+    <link href="lib/ionic/css/ionic.css" rel="stylesheet">
+    <link href="css/index.css" rel="stylesheet">
+
+    <!-- IF using Sass (run gulp sass first), then remove the CSS include above
+    <link href="css/ionic.app.css" rel="stylesheet">
+    -->
+    
+    <!-- <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"> -->
+
+    <!-- ionic/angularjs js -->
+    <script src="lib/ionic/js/ionic.bundle.js"></script>
+
+    <!-- cordova script (this will be a 404 during development) -->
+    <script src="cordova.js"></script>
+
+    <!-- your app's js -->
+    <script src="js/app.js"></script>
+  </head>
+
+  <body ng-app="starter">
+
+    <!-- Main template, other templates will be loaded into the MainContent view -->
+    <ion-side-menus>
+      <ion-pane ion-side-menu-content>
+        <ion-nav-bar class="bar-stable"></ion-nav-bar>
+        <ion-nav-view name="MainContent"></ion-nav-view>
+      </ion-pane>
+
+<!--       <ion-side-menu side="left">
+        <ion-content>
+          <ul id="menu-list">
+            <li>
+                <div id="card">
+                    <img id="card-profile-image" class="round user" data-info="profile-image" src="https://fbcdn-profile-a.akamaihd.net/hprofile-ak-xfa1/v/t1.0-1/c13.0.50.50/p50x50/10390333_779505348747582_7041021029615437478_n.jpg?oh=4ba308795e8669e60cfdc707b98c5289&oe=558EEDD4&__gda__=1435459323_6f83ce7c4344e738c7887e34e787f539">
+                    <h1 id="card-name" class="user" data-info="full-name"></h1>
+                    <hr>
+                </div>
+            </li>
+            <li><a class="btn locale" ui-sref="settings" menu-close>Settings</a></li>
+            <li><a class="btn locale" ui-sref="products" menu-close>Products</a></li>
+        </ul>
+        </ion-content>
+      </ion-side-menu>
+    </ion-side-menus> -->
+
+    <!-- DEBUG -->
+    <script id="debug.html" type="text/ng-template">
+      <ion-view title="" hide-back-button="true">
+        <ion-nav-buttons side="left">
+          <button class="button">
+            Ikea
+          </button>
+        </ion-nav-buttons>        
+        <ion-nav-buttons side="right">
+          <button class="button" menu-toggle="left">Menu</button>
+        </ion-nav-buttons>
+
+        <ion-content class="padding" ng-controller="debugCtrl">
+          <h2 id="status"></h2>
+
+          <a class="button" on-touch="Init()">Init Bluetooth</a>
+          <a class="button" on-touch="Scan()">Scan for devices</a>
+          <a class="button" on-touch="Discover()">Discover</a>
+          <a class="button" on-touch="RetrieveConnected()">Retrieve connected</a>
+          <a class="button" on-touch="Connect()">Connect</a>
+          <a class="button" on-touch="Disconnect()">Disconnect</a>
+          <a class="button" on-touch="Reconnect()">Reconnect</a>
+          <a class="button" on-touch="Close()">Close</a>
+
+          <a class="button" on-touch="IsConnected()">Check if a device is connected</a>
+
+          <ul id="list">
+          </ul>
+        </ion-content>
+      </ion-view>
+    </script>
+  
+    <!-- START -->
+    <script id="start.html" type="text/ng-template">
+      <ion-view title="" hide-back-button="true">
+        <ion-nav-buttons side="left">
+            <img class="logo" src="lib/ionic/img/ikeaLogo.png"/>
+        </ion-nav-buttons>
+
+        <ion-content class="schematic-bg" ng-controller="startCtrl">
+
+          <button id="status-btn" class="status-ready" on-touch="ToggleStatus()">Je bent beschikbaar</button>
+
+          <a class="btn btn-yellow product-link" ui-sref="products">Producten bekijken</a>
+          <a class="btn btn-yellow product-link" ui-sref="products">Koppel medewerker</a>
+
+        </ion-content>
+      </ion-view>
+    </script>    
+
+    <!-- PRODUCTS -->
+    <script id="products.html" type="text/ng-template">
+      <ion-view title="" hide-back-button="true">
+        <ion-nav-buttons side="left">
+          <img class="logo" src="lib/ionic/img/ikeaLogo.png"/>
+        </ion-nav-buttons>        
+        <ion-nav-buttons side="right">
+          <button class="button" ui-sref="start">Terug</button>
+        </ion-nav-buttons>
+
+        <ion-content ng-controller="productCtrl">
+
+          <ul id="genres">
+            <li><a ui-sref="badkamer">Badkamer</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkamer">Bergruimte</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkamer">Decoratie</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkamer">Eetkamer</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkamer">Eten</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkamer">Keukens</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkamer">Koken</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkamer">Textiel</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkamer">Tuin en balkon</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkamer">Verlichting</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkamer">Wasruimte</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkamer">Werkplek</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkamer">Woonkamer</a><span class="glyphicon glyphicon-play"></span></li>
+          </ul>
+
+        </ion-content>
+      </ion-view>
+    </script>
+
+    <!-- BADKAMER -->
+    <script id="badkamer.html" type="text/ng-template">
+      <ion-view title="" hide-back-button="true">
+        <ion-nav-buttons side="left">
+          <img class="logo" src="lib/ionic/img/ikeaLogo.png"/>
+        </ion-nav-buttons>        
+        <ion-nav-buttons side="right">
+          <button class="button" ui-sref="start">Terug</button>
+        </ion-nav-buttons>
+
+        <ion-content ng-controller="productCtrl">
+
+          <ul id="genres">
+            <li><a ui-sref="badkameracc">Badkameraccessoires</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkameracc">Badkamerkranen</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkameracc">Badkamermeubels</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkameracc">Badkamerverlichting</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkameracc">Badtextiel</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkameracc">Spiegels</a><span class="glyphicon glyphicon-play"></span></li>
+            <li><a ui-sref="badkameracc">Wastafels</a><span class="glyphicon glyphicon-play"></span></li>
+          </ul>
+        </ion-content>
+      </ion-view>
+    </script>
+
+    <!-- BADKAMER ACCESSOIRES -->
+    <script id="badkameracc.html" type="text/ng-template">
+      <ion-view title="" hide-back-button="true">
+        <ion-nav-buttons side="left">
+          <img class="logo" src="lib/ionic/img/ikeaLogo.png"/>
+        </ion-nav-buttons>        
+        <ion-nav-buttons side="right">
+          <button class="button" ui-sref="start">Terug</button>
+        </ion-nav-buttons>
+
+        <ion-content class="padding" ng-controller="productCtrl">
+
+          <img class="product" src="lib/ionic/img/ikea-wastafel.jpg"/>
+
+          <div class="product-switch">
+            <ion-toggle id="toggle" ng-model="toggle" id="toggle" toggle-class="toggle-calm" ng-change="onToggle(toggle)">Lamp staat uit</ion-toggle>
+          </div>
+
+          <div class="product-info">
+            <h2 class="name">EDEBOVIKEN</h2>
+            <p class="desc">Wastafel 1 bak, wit</p>
+            <h4 class="price">€ 140.-  / st. (€ 115.70 excl. btw)</h4>
+
+            <p class="article-num">Artikelnummer: <i>902.261.51</i></p>
+            
+            <b class="afm">Afmetingen</b>
+            <ul class="afm-list">
+              <li>100x49x6 cm</li>
+              <li>80x49x6 cm</li>
+              <li>60x49x6 cm</li>
+            </ul>
+          </div>
+
+        </ion-content>
+      </ion-view>
+    </script>
+
+  <script src="js/jquery-1.10.2.js"></script>
+  <script src="js/controllers.js"></script>
+  </body>
+</html>
