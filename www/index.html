@@ -136,22 +136,31 @@
 
         <ion-content class="page" ng-controller="medalsCtrl" ng-init="init()">
 
-          <h2 class="page-title">TRICKS</h2>
+          <h2 class="page-title">BADGES</h2>
 
-          <ul class="trick-list-tabs">
-            <li ng-class="{active: showMyTricks==true}" ng-click="showMyTricks = true">My tricks</li>
-            <li ng-class="{active: showMyTricks==false}" ng-click="showMyTricks = false">New tricks</li>
-          </ul>
-          <ul class="trick-list trick-list-my" ng-show="showMyTricks" ng-repeat="i in tricks">
-            <li ng-if="i.count > 0">
-              <span class="name">{{i.name}}</span>
-              <span class="counter">{{i.count}}</span>
+          <ul class="badges">
+            <li class="badge">
+              <div class="medal medal-easy"></div>
+              <p class="name">5 360 flips in one day</p>
+              <p class="date">17 May, 2016</p>
             </li>
-          </ul>
-          <ul class="trick-list trick-list-new" ng-show="!showMyTricks" ng-repeat="i in tricks">
-            <li ng-if="i.count == 0">
-              <span class="name">{{i.name}}</span>
-              <span class="counter">{{i.count}}</span>
+
+            <li class="badge">
+              <div class="medal medal-normal"></div>
+              <p class="name">10 heelflips in one day</p>
+              <p class="date">20 May, 2016</p>
+            </li>
+
+            <li class="badge">
+              <div class="medal medal-hard"></div>
+              <p class="name">50 kickflips</p>
+              <p class="date">26 May, 2016</p>
+            </li>
+
+            <li class="badge">
+              <div class="medal medal-hard"></div>
+              <p class="name">All 360 variations</p>
+              <p class="date">1 June, 2016</p>
             </li>
           </ul>
 

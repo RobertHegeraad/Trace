@@ -414,7 +414,7 @@ angular.module('controllers', [])
       $scope.board.y = data.y;
 
       if(Math.abs(data.x) >= $combinations.endpoints.x) { // Full flip
-        console.log('full flip');
+        // console.log('full flip');
 
         // Remove spin if there is no rotation
         if(trick.rotation == null) {
@@ -423,7 +423,7 @@ angular.module('controllers', [])
 
         // Is het skateboard weer op zijn wielen?
 
-        console.log('trick complete');
+        // console.log('trick complete');
         $scope.addTrick(trick);
       }
   }
@@ -436,8 +436,8 @@ angular.module('controllers', [])
     // console.log(trick);
 
     for(var i=0; i<$scope.tricks.length; i++) {
-      console.log(trick);
-      console.log($scope.tricks[i].trick);
+      // console.log(trick);
+      // console.log($scope.tricks[i].trick);
       
       if(angular.equals(trick, $scope.tricks[i].trick)) {
         $scope.tricks[i].count++;
@@ -472,7 +472,7 @@ angular.module('controllers', [])
   $rootScope.$on('checkMedal', function(event, args) {
     // var medal = $scope.medals[args.id];
 
-    if(args.count % 10 == 0) {
+    if(args.count % 5 == 0) {
       $notice.success("You've earned a badge: Land " + args.count + " " + args.name + "s");  
     } else {
         $notice.show("You've landed a " + args.name);
