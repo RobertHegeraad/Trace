@@ -84,7 +84,7 @@ ol, ul {
 .connect-btn {
     width: 200px;
     height: 200px;
-    margin: 150px auto;
+    margin: 120px auto;
     font-size: 30px;
     padding: 76px 10px;
     text-align: center;
@@ -152,7 +152,7 @@ ol, ul {
     list-style-type: none;
 }
 .badges .badge {
-    width: 80px;
+    width: 70px;
     margin-right: 15px;
     float: right;
     font-size: 12px;
@@ -162,10 +162,10 @@ ol, ul {
     box-sizing: initial;
 }
 .badges .badge .medal {
-    width: 80px;
-    height: 80px;
+    width: 70px;
+    height: 70px;
     background-image: url('../img/medal.png');
-    background-size: cover;
+    background-size: contain;
 }
 .badges .badge .medal-hard {
     background-image: url('../img/medal_hard.png');
