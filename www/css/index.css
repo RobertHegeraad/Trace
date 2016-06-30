@@ -166,6 +166,7 @@ ol, ul {
     height: 70px;
     background-image: url('../img/medal.png');
     background-size: contain;
+    background-repeat: no-repeat;
 }
 .badges .badge .medal-hard {
     background-image: url('../img/medal_hard.png');
