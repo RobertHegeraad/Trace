@@ -182,7 +182,7 @@ angular.module('controllers', [])
     {
       id: 001,
       name: 'Kickflip',
-      count: 3,
+      count: 2,
       trick: {
         flip: $combinations.flip.KICKFLIP
       }
@@ -444,9 +444,11 @@ angular.module('controllers', [])
         $scope.$apply();
         console.log($scope.tricks[i]);
 
-        $notice.show("You've landed a " + $scope.tricks[i].name);
-
-        $rootScope.$emit('checkMedal', { id: $scope.tricks[i].id });
+        $rootScope.$emit('checkMedal', { 
+          id: $scope.tricks[i].id,
+          name: $scope.tricks[i].name,
+          count: $scope.tricks[i].count
+        });
 
         break;
 
@@ -468,10 +470,16 @@ angular.module('controllers', [])
   }
 
   $rootScope.$on('checkMedal', function(event, args) {
-    var medal = $scope.medals[args.id];
+    // var medal = $scope.medals[args.id];
 
-    if(medal != null) {
-      $notice.success("You've earned a badge: " + medal);
+    if(args.count % 10 == 0) {
+      $notice.success("You've earned a badge: Land " + args.count + " " + args.name + "s");  
+    } else {
+        $notice.show("You've landed a " + args.name);
     }
+
+    // if(medal != null) {
+    //   $notice.success("You've earned a badge: " + medal);
+    // }
   });
 });
