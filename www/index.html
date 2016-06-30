@@ -12,7 +12,8 @@
     <link href="css/ionic.app.css" rel="stylesheet">
     -->
     
-    <!-- <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"> -->
+    <link rel="stylesheet" type="text/css" href="css/font-awesome.css">
+
 
     <!-- ionic/angularjs js -->
     <script src="lib/ionic/js/ionic.bundle.js"></script>
@@ -24,9 +25,16 @@
     <script src="js/app.js"></script>
   </head>
 
-  <body ng-app="starter" ng-controller="crownstoneCtrl">
+  <body ng-app="starter" ng-controller="startCtrl">
 
     <div id="notice"></div>
+
+    <ul class="action-bar">
+          <li ui-sref="dashboard" class="action-bar-item profile-icon icon icon-large"></li>
+          <li ui-sref="medals" class="action-bar-item write-review-icon icon icon-large"></li>
+          <li data-view="leaderboard" class="action-bar-item ranking-icon icon icon-large"></li>
+          <li class="action-bar-item search-icon icon icon-large"></li>
+      </ul>
 
     <!-- Main template, other templates will be loaded into the MainContent view -->
     <!-- <ion-side-menus>
@@ -45,213 +53,111 @@
       <ion-side-menu side="left">
         <ion-content>
           <ul id="menu-list">
-            <li><a class="btn btn-yellow product-link" ui-sref="light" on-touch="init()">Find Crownstones</a></li>
-            <li><a class="btn btn-yellow product-link" ui-sref="light" on-touch="stopSearching()">Stop searching</a></li>
-        </ul>
+            <li class="menu-section-header"><i class="fa fa-bluetooth-b"></i>Trace</li>
+            <li ng-hide="connected == false"><div class="btn btn-blue">Trace is connected</div></li>
+            <li ng-hide="connected == true"><div class="btn btn-red">Trace is not connected</div></li>
+            <li ng-hide="connected == false || session == true"><a class="btn btn-yellow" style="padding: 0 10px" on-touch="startSession()">Start your session</a></li>
+            <li ng-hide="connected == false || session == false"><a class="btn btn-yellow" style="padding: 0 10px" on-touch="stopSession()">End your session</a></li>
+            <li class="menu-section-header"><i class="fa fa-lock"></i>Privacy</li>
+            <li>
+              <label for="checker-privacy-location">
+                <input id="checker-privacy-location" type="checkbox" checked="checked"> <span>Hide my location</span>
+              </label>
+            </li>
+            <li>
+              <label for="checker-privacy-profile">
+                <input id="checker-privacy-profile" type="checkbox" checked="checked"> <span>Make my profile public</span>
+              </label>
+            </li>
+          </ul>
         </ion-content>
       </ion-side-menu>
     </ion-side-menus>
-
-
-    <!-- DEBUG -->
-    <script id="debug.html" type="text/ng-template">
-      <ion-view title="" hide-back-button="true">
-        <ion-nav-buttons side="left">
-          <button class="button" menu-toggle="left">
-            Ikea
-          </button>
-        </ion-nav-buttons>        
-        <ion-nav-buttons side="right">
-          <button class="button" menu-toggle="left">Menu</button>
-        </ion-nav-buttons>
-
-        <ion-content class="padding" ng-controller="debugCtrl">
-          <h2 id="status"></h2>
-
-          <a class="button" on-touch="Init()">Init BLE</a>
-          <a class="button" on-touch="Scan()">Scan for devices</a>
-          <a class="button" on-touch="StopScan()">Stop Scanning</a>
-          
-          <a class="button" on-touch="RetrieveConnected()">Retrieve connected</a>
-          
-          <a class="button option-btn" on-touch="Discover()">Discover</a>
-          <a class="button option-btn" on-touch="Connect()">Connect</a>
-          <a class="button option-btn" on-touch="Reconnect()">Reconnect</a>
-          <a class="button option-btn" on-touch="Disconnect()">Disconnect</a>
-          <a class="button option-btn" on-touch="Close()">Close</a>
-
-          <a class="button" on-touch="IsConnected()">Check if a device is connected</a>
-
-
-
-          <ul id="list"></ul>
-
-
-
-          <hr/>
-
-
-          <a class="button" on-touch="InitBL()">Init BL</a>
-          <a class="button" on-touch="ConnectBL()">Connect BL</a>
-          <a class="button" on-touch="WriteBL()">Write BL</a>
-          <a class="button" on-touch="ReadBL()">Read BL</a>
-          <a class="button" on-touch="SubscribeBL()">Subscribe BL</a>
-          <a class="button" on-touch="ListBL()">List paired BL</a>
-          <a class="button" on-touch="DiscoverUnpairedBL()">Discover unpaired BL</a>
-
-
-          <ul id="connected-list">
-          </ul>
-        </ion-content>
-      </ion-view>
-    </script>
-
-    <!-- LIGHT -->
-    <script id="light.html" type="text/ng-template">
-      <ion-view title="" hide-back-button="true">
-        <ion-nav-buttons side="left">
-            <img class="logo" src="lib/ionic/img/ikeaLogo.png"/>
-        </ion-nav-buttons>
-
-        <ion-content class="schematic-bg">
-          <div class="light-bulb" on-touch="TogglePower()"></div>
-        </ion-content>
-      </ion-view>
-    </script>
   
     <!-- START -->
     <script id="start.html" type="text/ng-template">
       <ion-view title="" hide-back-button="true">
         <ion-nav-buttons side="left">
-            <img class="logo" src="lib/ionic/img/ikeaLogo.png" menu-toggle="left"/>
+            <div class="menu-btn fa fa-bars" menu-toggle="left"></div>
         </ion-nav-buttons>
 
-        <ion-content class="schematic-bg" ng-controller="startCtrl">
+        <ion-content class="page" ng-controller="startCtrl" ng-init="init()">
 
-          <button id="status-btn" class="status-ready" on-touch="ToggleStatus()">Je bent beschikbaar</button>
-
-          <a class="btn btn-yellow product-link" ui-sref="products">Producten bekijken</a>
-          <a class="btn btn-yellow product-link" on-touch="PairEmployee()">Koppel medewerker</a>
+          <a class="connect-btn" on-touch="connectTrace()">Connect <span>Trace</span></a>
 
         </ion-content>
       </ion-view>
     </script>
 
-    <!-- PRODUCTS -->
-    <script id="products.html" type="text/ng-template">
+    <!-- DASHBOARD -->
+    <script id="dashboard.html" type="text/ng-template">
       <ion-view title="" hide-back-button="true">
         <ion-nav-buttons side="left">
-          <img class="logo" src="lib/ionic/img/ikeaLogo.png"/>
+            <div class="menu-btn fa fa-bars" menu-toggle="left"></div>
         </ion-nav-buttons>        
         <ion-nav-buttons side="right">
           <button class="button" ui-sref="start">Terug</button>
         </ion-nav-buttons>
 
-        <ion-content ng-controller="productCtrl">
+        <ion-content class="page" ng-controller="dashboardCtrl" ng-init="init()">
 
-          <ul id="genres">
-            <li><a ui-sref="badkamer"><img src="img/1.JPG"/><div>Badkamer</div></a></li>
-            <li><a ui-sref="badkamer"><img src="img/kast.JPG"/><div>Bergruimte</div></a></li>
-            <li><a ui-sref="badkamer"><img src="img/decoratie.JPG"/><div>Decoratie</div></a></li>
-            <li><a ui-sref="badkamer"><img src="img/tafel.JPG"/><div>Eetkamer</div></a></li>
-            <li><a ui-sref="badkamer"><img src="img/bed.JPG"/><div>Slaapkamer</div></a></li>
-            <li><a ui-sref="badkamer"><img src="img/koelkast.JPG"/><div>Keukens</div></a></li>
-            <li><a ui-sref="badkamer"><img src="img/koken.JPG"/><div>Koken</div></a></li>
-            <li><a ui-sref="badkamer"><img src="img/stoel.JPG"/><div>Tuin en balkon</div></a></li>
-            <li><a ui-sref="badkamer"><img src="img/was.JPG"/><div>Wasruimte</div></a></li>
-            <li><a ui-sref="badkamer"><img src="img/bank.JPG"/><div>Woonkamer</div></a></li>
-            <li><a ui-sref="badkamer"><img src="img/lamp.JPG"/><div>Verlichting</div></a></li>
-            <li><a ui-sref="badkamer"><img src="img/gordijnen.JPG"/><div>Textiel</div></a></li>
+          <h2 class="page-title">TRICKS</h2>
+
+          <ul class="trick-list-tabs">
+            <li ng-class="{active: showMyTricks==true}" ng-click="showMyTricks = true">My tricks</li>
+            <li ng-class="{active: showMyTricks==false}" ng-click="showMyTricks = false">New tricks</li>
+          </ul>
+          <ul class="trick-list trick-list-my" ng-show="showMyTricks" ng-repeat="i in tricks">
+            <li ng-if="i.count > 0">
+              <span class="name">{{i.name}}</span>
+              <span class="counter">{{i.count}}</span>
+            </li>
+          </ul>
+          <ul class="trick-list trick-list-new" ng-show="!showMyTricks" ng-repeat="i in tricks">
+            <li ng-if="i.count == 0">
+              <span class="name">{{i.name}}</span>
+              <span class="counter">{{i.count}}</span>
+            </li>
           </ul>
 
         </ion-content>
       </ion-view>
     </script>
 
-    <!-- BADKAMER -->
-    <script id="badkamer.html" type="text/ng-template">
+    <!-- MEDALS -->
+    <script id="medals.html" type="text/ng-template">
       <ion-view title="" hide-back-button="true">
         <ion-nav-buttons side="left">
-          <img class="logo" src="lib/ionic/img/ikeaLogo.png"/>
+            <div class="menu-btn fa fa-bars" menu-toggle="left"></div>
         </ion-nav-buttons>        
         <ion-nav-buttons side="right">
           <button class="button" ui-sref="start">Terug</button>
         </ion-nav-buttons>
 
-        <ion-content ng-controller="productCtrl">
+        <ion-content class="page" ng-controller="medalsCtrl" ng-init="init()">
 
-          <ul id="genres">
-            <li><a ui-sref="badkameracc"><img src="img/1.JPG"/><div>Tyngen</div></a><span class="glyphicon glyphicon-play"></span></li>
-            <li><a ui-sref="badkameracc"><img src="img/2.JPG"/><div>Fullen</div></a><span class="glyphicon glyphicon-play"></span></li>
-            <li><a ui-sref="badkameracc"><img src="img/3.JPG"/><div>Herregud</div></a><span class="glyphicon glyphicon-play"></span></li>
-            <li><a ui-sref="badkameracc"><img src="img/4.JPG"/><div>Lillangen</div></a><span class="glyphicon glyphicon-play"></span></li>
-            <li><a ui-sref="badkameracc"><img src="img/5.JPG"/><div>Godmorgen</div></a><span class="glyphicon glyphicon-play"></span></li>
-            <li><a ui-sref="badkameracc"><img src="img/6.JPG"/><div>Lejen</div></a><span class="glyphicon glyphicon-play"></span></li>
-            <li><a ui-sref="badkameracc"><img src="img/7.JPG"/><div>Glotten</div></a><span class="glyphicon glyphicon-play"></span></li>
-            <li><a ui-sref="badkameracc"><img src="img/8.JPG"/><div>Molger</div></a><span class="glyphicon glyphicon-play"></span></li>
-            <li><a ui-sref="badkameracc"><img src="img/9.JPG"/><div>Rotten</div></a><span class="glyphicon glyphicon-play"></span></li>
-            <li><a ui-sref="badkameracc"><img src="img/10.JPG"/><div>Forksiktig</div></a><span class="glyphicon glyphicon-play"></span></li>
-            <li><a ui-sref="badkameracc"><img src="img/11.JPG"/><div>Rattviken</div></a><span class="glyphicon glyphicon-play"></span></li>
-            <li><a ui-sref="badkameracc"><img src="img/12.JPG"/><div>Odensvik</div></a><span class="glyphicon glyphicon-play"></span></li>
+          <h2 class="page-title">TRICKS</h2>
+
+          <ul class="trick-list-tabs">
+            <li ng-class="{active: showMyTricks==true}" ng-click="showMyTricks = true">My tricks</li>
+            <li ng-class="{active: showMyTricks==false}" ng-click="showMyTricks = false">New tricks</li>
           </ul>
-        </ion-content>
-      </ion-view>
-    </script>
-
-    <!-- BADKAMER ACCESSOIRES -->
-    <script id="badkameracc.html" type="text/ng-template">
-      <ion-view title="" hide-back-button="true">
-        <ion-nav-buttons side="left">
-          <img class="logo" src="lib/ionic/img/ikeaLogo.png"/>
-        </ion-nav-buttons>        
-        <ion-nav-buttons side="right">
-          <button class="button" ui-sref="start">Terug</button>
-        </ion-nav-buttons>
-
-        <ion-content class="padding" ng-controller="productCtrl">
-
-          <img class="product" src="lib/ionic/img/ikea-wastafel.jpg"/>
-
-          <div class="product-switch">
-            <h3>Lamp</h3>
-            <select>
-              <option>30 seconden</option>
-              <option selected>1 minuut</option>
-              <option>5 minuten</option>
-            </select>
-
-            <div class="color-picker-toggle" ng-model="colorpicker" ng-click="color()"></div>
-
-            <div id="color-picker" class="color-picker">
-              <div class="color color-blue" data-color="blue" ng-click="setColor('blue', $event)"></div>
-              <div class="color color-yellow" data-color="yellow" ng-click="setColor('yellow', $event)"></div>
-              <div class="color color-red" data-color="red" ng-click="setColor('red', $event)"></div>
-              <div class="color color-green" data-color="green" ng-click="setColor('green', $event)"></div>
-            </div>
-
-            
-            <button id="lamp-btn" class="lamp-btn-off" data-toggle="false" on-touch="onToggle()">Lamp</button>
-          </div>
-
-          <div class="product-info">
-            <h2 class="name">EDEBOVIKEN</h2>
-            <p class="desc">Wastafel 1 bak, wit</p>
-            <h4 class="price">€ 140.-  / st. (€ 115.70 excl. btw)</h4>
-
-            <p class="article-num">Artikelnummer: <i>902.261.51</i></p>
-            
-            <b class="afm">Afmetingen</b>
-            <ul class="afm-list">
-              <li>100x49x6 cm</li>
-              <li>80x49x6 cm</li>
-              <li>60x49x6 cm</li>
-            </ul>
-          </div>
+          <ul class="trick-list trick-list-my" ng-show="showMyTricks" ng-repeat="i in tricks">
+            <li ng-if="i.count > 0">
+              <span class="name">{{i.name}}</span>
+              <span class="counter">{{i.count}}</span>
+            </li>
+          </ul>
+          <ul class="trick-list trick-list-new" ng-show="!showMyTricks" ng-repeat="i in tricks">
+            <li ng-if="i.count == 0">
+              <span class="name">{{i.name}}</span>
+              <span class="counter">{{i.count}}</span>
+            </li>
+          </ul>
 
         </ion-content>
       </ion-view>
     </script>
-
 
   <script src="js/jquery-1.10.2.js"></script>
   <script src="js/controllers.js"></script>

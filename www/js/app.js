@@ -28,24 +28,6 @@ angular.module('starter', ['ionic', 'controllers'])
 
   $stateProvider
 
-  .state('debug', {
-    url: '/debug',
-    views: {
-      'MainContent': {
-        templateUrl: 'debug.html'
-      }
-    }
-  })
-
-  .state('light', {
-    url: '/light',
-    views: {
-      'MainContent': {
-        templateUrl: 'light.html'
-      }
-    }
-  })
-
   .state('start', {
     url: '/start',
     views: {
@@ -54,36 +36,136 @@ angular.module('starter', ['ionic', 'controllers'])
       }
     }
   })
+
+  .state('dashboard', {
+    url: '/dashboard',
+    views: {
+      'MainContent': {
+        templateUrl: 'dashboard.html'
+      }
+    }
+  })
   
-  .state('products', {
-    url: '/products',
+  .state('medals', {
+    url: '/medals',
     views: {
       'MainContent': {
-        templateUrl: 'products.html'
-      }
-    }
-  })
-
-  .state('badkamer', {
-    url: '/badkamer',
-    views: {
-      'MainContent': {
-        templateUrl: 'badkamer.html'
-      }
-    }
-  })
-
-  .state('badkameracc', {
-    url: '/badkameracc',
-    views: {
-      'MainContent': {
-        templateUrl: 'badkameracc.html'
+        templateUrl: 'medals.html'
       }
     }
   })
 
   $urlRouterProvider.otherwise("/start");
   // $urlRouterProvider.otherwise("/debug");
+})
+
+.factory('$combinations', function($rootScope) {
+  return {
+      flip: {
+        KICKFLIP: 0,
+        HEELFLIP: 1
+      },
+
+      spin: {
+        FRONTSIDE: 0,
+        BACKSIDE: 1
+      },
+
+      rotation: {
+        HALF: 0,
+        FULL: 1
+      },
+
+      endpoints: {
+        x: 360,
+        y: 360,
+        z: 0,  // Landed
+        step: 60,
+        margin: 20
+      }
+  };
+})
+
+.factory('$notice', function($rootScope) {
+  return {
+      check: function(ms) {
+          if(store.has('notice')) {
+              this.show(store.get('notice'), ms);
+              store.remove('notice');
+          }
+      },
+
+      flash: function(string) {
+          store.set('notice', string);
+      },
+
+      show: function(string, ms) {
+          ms = ms || 2000;
+
+          var $notice = $('#notice');
+
+          $notice.html('<div>' + string + '</div>').fadeIn(400);
+
+          setTimeout(function() {
+              $notice.fadeOut(400);
+          }, ms);
+      },
+
+      success: function(string, ms) {
+          ms = ms || 2000;
+
+          var $notice = $('#notice');
+
+          $notice.addClass('notice-success');
+          $notice.html('<div>' + string + '</div>').fadeIn(400);
+
+          setTimeout(function() {
+              $notice.fadeOut(400);
+              $notice.removeClass('notice-success');
+          }, ms);
+      },
+
+      stick: function(string) {
+          $('#notice').html('<div>' + string + '</div>').fadeIn(400).addClass('pulse');
+      },
+
+      close: function() {
+          $('#notice').fadeOut(400);
+      }
+  };
+})
+
+.factory('$storage', function($rootScope) {
+  return {
+      has: function(key) {
+        var item = window.localStorage.getItem(key);
+        if(item !== null && item !== undefined) {
+          return true;
+        }
+        return false;
+      },
+
+      set: function(key, value) {
+        window.localStorage[key] = JSON.stringify(value);
+      },
+
+      get: function(key) {
+        return JSON.parse(window.localStorage[key]);
+      },
+
+      save: function(key, value) {
+        this.set(key, value);
+        return this.get(key);
+      },
+
+      remove: function(key) {
+          window.localStorage.removeItem(key);
+      },
+
+      clear: function() {
+          window.localStorage.clear();
+      }
+  };
 })
 
 /*
@@ -94,22 +176,18 @@ angular.module('starter', ['ionic', 'controllers'])
 .factory('$BLE', function($rootScope) {
     return {
 
-      // Power Service
-      powerServiceUuid:                       '5b8d0000-6f20-11e4-b116-123b93f75cba',
-      // Power Service - Characteristics
-      pwmUuid:                                '5b8d0001-6f20-11e4-b116-123b93f75cba',
-      sampleCurrentUuid:                      '5b8d0002-6f20-11e4-b116-123b93f75cba',
-      currentCurveUuid:                       '5b8d0003-6f20-11e4-b116-123b93f75cba',
-      currentConsumptionUuid:                 '5b8d0004-6f20-11e4-b116-123b93f75cba',
-      currentLimitUuid:                       '5b8d0005-6f20-11e4-b116-123b93f75cba',
+      device: null,
 
-      Init: function(s, f) {
-          console.log('BLE init');
-          bluetoothle.initialize(s, f, {request:true});
+      device: {
+        address: 'C1:15:52:B4:AA:BA'
       },
 
-      Subscribe: function(s, f, params) {
-        bluetoothle.subscribe(s, f, params);
+      UARTServiceUUID: "6e400001-b5a3-f393-e0a9-e50e24dcca9e",
+      TXCharacteristicUUID: "6e400002-b5a3-f393-e0a9-e50e24dcca9e",
+      RXCharacteristicUUID: "6e400003-b5a3-f393-e0a9-e50e24dcca9e",
+
+      Init: function(s, f) {
+          bluetoothle.initialize(s, f, {request:true});
       },
 
       DiscoverServices: function(s, f, address) {
@@ -165,7 +243,6 @@ angular.module('starter', ['ionic', 'controllers'])
 
       /*
        * t5 CC:44:74:0E:08:2A
-       * t5 CE:9E:48:0E:7C:52
        */
       Connect: function(s, f, address) {
         // 6C:71:D9:9D:64:EE -> Robert PC
@@ -207,213 +284,20 @@ angular.module('starter', ['ionic', 'controllers'])
           "address": address
         });
         return connected;
+      },
+
+      /*
+       * Subsribe to a service
+       */
+      Subscribe: function(s, f, params) {
+        bluetoothle.subscribe(s, f, params);
+      },
+
+      /*
+       * Read from a service
+       */
+      Read: function(s, f, params) {
+        bluetoothle.read(s, f, params);
       }
     };
-})
-
-
-/*
- * ID: 00:6A:8E:16:C8:EB
- * Class: 7936
- * Address: 6C:71:D9:9D:64:EE
- * Name: Naambordje
- */
-.factory('$BL', function($rootScope) {
-    var methods = {};
-
-      methods.Init = function(s, f) {
-          console.log('BL init');
-          bluetoothSerial.enable(function(data) {
-            console.log('BL init success');
-            console.log(JSON.stringify(data));
-
-            s(data);
-          }, function(data) {
-            console.log('BL init failed');
-            console.log(JSON.stringify(data));
-            f(data);
-          });
-      }
-
-      /*
-       * connects to a Bluetooth device. The callback is long running.
-       */
-      methods.Connect = function(mac, s, f) {
-          console.log('BL connecting...');
-          bluetoothSerial.connect('00:6A:8E:16:C8:EB', function(data) {
-            console.log('BL connect success');
-            console.log(JSON.stringify(data));
-
-            s(data);
-          }, function(data) {
-            console.log('BL connect failed');
-            console.log(JSON.stringify(data));
-
-            f(data);
-
-            // Attempt to reconnect once
-            bluetoothSerial.connect('00:6A:8E:16:C8:EB', function(data) {
-              console.log('reconnect succcess');
-              console.log(JSON.stringify(data));
-
-              s(data);
-            }, function(data) {
-              console.log('reconnect failed');
-              console.log(JSON.stringify(data));
-
-              f(data);
-            });
-          });
-      }
-
-      methods.IsConnected = function() {
-        console.log('check is connected');
-        bluetoothSerial.isConnected(function() {
-          return true;
-        }, function() {
-          return false;
-        });
-      }
-
-      methods.Write = function(data, s, f) {
-        console.log('writing...');
-        bluetoothSerial.write("hello", function(data) {
-          console.log('BL write success');
-          console.log(JSON.stringify(data));
-        }, function(data) {
-          console.log('BL write failed');
-          console.log(JSON.stringify(data));
-        });
-      }
-
-      methods.Read = function(s, f) {
-       bluetoothSerial.read(function(data) {
-        // console.log('BL read success');
-        // console.log(JSON.stringify(data));
-
-          s(data);
-       }, function(data) {
-        // console.log('BL read failed');
-        // console.log(JSON.stringify(data));
-
-          f(data);
-       }); 
-      }
-
-      methods.Clear = function() {
-        bluetoothSerial.clear(function() {
-          console.log('clear success');
-        }, function() {
-          console.log('clear fail');
-        });
-      }
-
-      methods.EndlessRead = function(s, f) {
-        methods.Read(function(data) {
-          s(data);
-        }, function(data) {
-          f(data);
-        });
-      }
-
-      /*
-       * Lists paired devices
-       */
-      methods.List = function(s, f) {
-        bluetoothSerial.list(function(data) {
-          console.log('BL list success');
-          console.log(JSON.stringify(data));
-        }, function(data) {
-          console.log('BL list failed');
-          console.log(JSON.stringify(data));
-        });
-      }
-
-      methods.Subscribe = function() {
-        bluetoothSerial.subscribe('\n', function (data) {
-            console.log('BL subscribe success');
-            console.log(JSON.stringify(data));
-        }, function(data) {
-            console.log('BL subscribe fail');
-            console.log(JSON.stringify(data));
-        });
-      }
-
-      methods.DiscoverUnpaired = function() {
-        bluetoothSerial.discoverUnpaired(function (data) {
-            console.log('BL discover unpaired success');
-            console.log(JSON.stringify(data));
-        }, function(data) {
-            console.log('BL discover unpaired fail');
-            console.log(JSON.stringify(data));
-        });
-      }
-
-
-      return methods;
-})
-
-/* ----------------------------------------------------------------------------------------
- * NOTICES
- *
- * Notices for user
- */
-.factory('$notice', function() {
-
-  return {    
-    /*
-     * Check if there is a notice from a previous page
-     *
-     * @param The number of miliseconds to show the flash notice
-     */
-    check: function(ms) {
-        if(store.has('notice')) {
-            this.show(store.get('notice'), ms);
-            store.remove('notice');
-        }
-    },
-
-    /*
-     * Set a notice for the next page (slide/redirect)
-     *
-     * @param A language string form the ./locale folder
-     */
-    flash: function(string) {
-        store.set('notice', string);
-    },
-
-    /*
-     * Show a notice for a few seconds
-     *
-     * @param A language string from the ./locale folder
-     * @param The number of miliseconds the notice is visible
-     */
-    show: function(string, ms) {
-        ms = ms || 2000;
-
-        var $notice = $('#notice');
-
-        $notice.html('<div>' + string + '</div>').fadeIn(400);
-
-        setTimeout(function() {
-            $notice.fadeOut(400);
-        }, ms);
-    },
-
-    /*
-     * Show a notice that can't be closed
-     *
-     * @param A language string form the ./locale folder
-     */
-    stick: function(string) {
-        $('#notice').html('<div>' + string + '</div>').fadeIn(400).addClass('pulse');
-    },
-
-    /*
-     * Close a notice
-     */
-    close: function() {
-        $('#notice').fadeOut(400);
-    }
-  };
 });

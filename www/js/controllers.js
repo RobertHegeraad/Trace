@@ -1,699 +1,6 @@
 angular.module('controllers', [])
 
-
-// CROWNSTONE CONTROLLER ------------------------------------------------------------------------------------------------------ 
-
-.controller('crownstoneCtrl', function($scope, $compile, $BLE) {
-    // Scan crownstones
-    // Connect to closest crownstone
-    // Read/Write to crownstone
-
-    // Power Service
-  var powerServiceUuid =                       '5b8d0000-6f20-11e4-b116-123b93f75cba';
-  // Power Service - Characteristics
-  var pwmUuid =                                '5b8d0001-6f20-11e4-b116-123b93f75cba';
-  var sampleCurrentUuid =                      '5b8d0002-6f20-11e4-b116-123b93f75cba';
-  var currentCurveUuid =                       '5b8d0003-6f20-11e4-b116-123b93f75cba';
-  var currentConsumptionUuid =                 '5b8d0004-6f20-11e4-b116-123b93f75cba';
-  var currentLimitUuid =                       '5b8d0005-6f20-11e4-b116-123b93f75cba';
-
-  $scope.TogglePower = function() {
-    $('.light-bulb').toggleClass('light-bulb-on');
-  }
-
-  $scope.PowerOn = function() {
-    $('.light-bulb').addClass('light-bulb-on');
-  }
-
-  $scope.PowerOff = function() {
-    $('.light-bulb').removeClass('light-bulb-on');
-  }
-
-  $scope.init = function() {
-    console.log("Find crownstones");
-      
-    $BLE.Init(function() {
-      var map = {};
-
-      $scope.findCrownstones(function(obj) {
-        // Crownstone found
-        console.log(JSON.stringify(obj));
-        
-        if(obj.status != "scanStarted") {
-          map[obj.address] = {'name': obj.name, 'rssi': obj.rssi, 'address': obj.address};
-
-          var closest_rssi = -128,
-              closest;
-          for (var el in map) {
-            console.log(el);
-            if (map[el]['rssi'] > closest_rssi) {
-              closest_rssi = map[el]['rssi'];
-              closest = map[el];
-            }
-          }
-
-          $BLE.StopScan();
-          clearInterval(findTimer);
-
-          console.log('CLOSEST');
-          console.log(JSON.stringify(closest));
-
-          // Connect to the closest
-          $scope.connect(closest);
-        }
-      });
-    });
-  }
-
-  var findTimer;
-  $scope.findCrownstones = function(callback) {
-
-      $BLE.StartScan(callback);
-      findTimer = setInterval(function() {
-        console.log("restart scan");
-        $BLE.StopScan();
-        $BLE.StartScan(callback);
-      }, 2000);
-  }
-
-  $scope.stopSearching = function() {
-    console.log('stop searching');
-    $BLE.StopScan();
-    $BLE.Disconnect();
-    clearInterval(findTimer);
-    clearInterval(rssiInterval);
-  }
-
-  var connected = false;
-  var connecting = false;
-  var connectInterval;
-  $scope.connect = function(crownstone) {
-    if(!(connected || connecting)) {
-      connecting = true;
-
-      // var paramsObj = {"address": crownstone.address};
-      var paramsObj = {"address": 'CE:9E:48:0E:7C:52'};
-      // var paramsObj = {"address": '9C:D3:5B:1D:11:14'};
-
-      $BLE.Connect(function(data) { // Connect pending / success
-        connecting = false;
-
-        if(data.status == 'connected') {
-          connected = true;
-          clearInterval(connectInterval);
-
-          console.log('connected');
-
-
-          // Discover services --------------------------------------------------------
-          $scope.discoverServices(function(obj) {
-            // obj.services // array
-            // serviceUuid, characteristicUuid
-            if(obj.status == 'discovered') {
-              console.log('discovering services success');
-
-              console.log(JSON.stringify(obj.services));
-
-
-              var services = obj.services;
-              for (var i = 0; i < services.length; ++i) {
-                var serviceUuid = services[i].serviceUuid;
-                var characteristics = services[i].characteristics;
-                for (var j = 0; j < characteristics.length; ++j) {
-                  var characteristicUuid = characteristics[j].characteristicUuid;
-                  console.log("Found service " + serviceUuid + " with characteristic " + characteristicUuid);
-
-                  if (serviceUuid == powerServiceUuid) {
-                    if (characteristicUuid == pwmUuid) {
-                      console.log('Able to sent power');
-
-                      $scope.watchRssi(data.address);
-                    }
-                  }
-                }
-              }
-            } else {
-              console.log('failed to discover services');              
-            }
-          }, function(obj) {
-            console.log('discovering services error: ' + obj.error + ' message: ' + obj.message);
-          }, paramsObj.address);
-          
-        } else if(data.status == 'connecting') {
-          // connecting
-        } else {
-          connected = false;
-          $BLE.Disconnect();
-        
-          // connect timed out, will attempt reconnect
-          console.log('connection timed out, reconnecting...');
-          // $scope.connect(crownstone);
-          return;
-        }
-      
-      }, function(data) { // Failed to connect
-        connecting = false;
-        connected = false;
-        $BLE.Disconnect();
-
-        if(data.error == 'connect') {
-          // connection error, will attempt reconnect
-          console.log('connection failed, reconnecting...');
-
-          setTimeout(function() {
-            $scope.connect(crownstone);
-          }, 2000);
-          return;
-        } else {
-          console.log('connection failed');
-          // connection error
-        }
-
-      }, paramsObj.address); // 'CE:9E:48:0E:7C:52' = crownstone
-    }
-  }
-
-  var rssiInterval;
-  var latest;
-  $scope.watchRssi = function(address) {
-    // if(connected) {
-      setInterval(function() {
-        $BLE.Rssi(function(data) {
-
-          $('#rssi').html(data.rssi);
-
-          console.log('rssi success');
-          console.log(JSON.stringify(data));
-          // console.log(data.rssi);
-
-          latest = data.rssi;
-
-          if(data.rssi > -60) { // -60 = ~20cm??
-
-            if(latest >= data.rssi) {
-              // Turn on light
-              $scope.PowerOn();
-
-              $scope.writePWM(address, 255, function() {
-                console.log('written 255');
-              }, function() {
-                console.log('failed to write 255');
-              });
-            }
-
-          } else {  // Restart scan??
-            // Turn off light
-            $scope.PowerOff();
-
-            if(latest <= data.rssi) {
-              $scope.writePWM(address, 0, function() {
-                console.log('written 0');
-              }, function() {
-                console.log('failed to write 0');
-              });
-            }
-          }
-        }, function(data) {
-          console.log('rssi failed');
-          console.log(JSON.stringify(data));
-          // Turn off light
-            $scope.PowerOff();
-
-          $scope.writePWM(address, 0, function() {
-            console.log('written 0');
-          }, function() {
-              console.log('failed to write 0');
-          });
-        }, address); 
-      }, 4000);
-    // }
-  }
-
-  $scope.writePWM = function(address, value, successCB, errorCB) {
-    var u8 = new Uint8Array(1);
-    u8[0] = value;
-    var v = $BLE.BytesToEncodedString(u8);
-    console.log("Write " + v + " at service " + powerServiceUuid + ' and characteristic ' + pwmUuid + ' to address ' + address);
-    var paramsObj = {"address": address, "serviceUuid": powerServiceUuid, "characteristicUuid": pwmUuid , "value" : v};
-    $BLE.Write(function(obj) { // write success
-        if (obj.status == 'written') {
-          console.log('Successfully written to pwm characteristic - ' + obj.status);
-
-          if (successCB) successCB();
-        } else {
-          console.log('Writing to pwm characteristic was not successful' + obj);
-
-          if (errorCB) errorCB();
-        }
-      },
-      function(obj) { // write error
-        console.log("Error in writing to pwm characteristic: " + obj.error + " - " + obj.message);
-
-        if (errorCB) errorCB();
-      },
-      paramsObj);
-  }
-
-  $scope.discoverServices = function(s, f, address) {
-    $BLE.DiscoverServices(s, f, address);
-  }
-})
-
-
-
-// START CONTROLLER ------------------------------------------------------------------------------------------------------ 
-
-.controller('startCtrl', function($scope, $compile, $BL, $BLE) {
-
-  // Power Service
-  var powerServiceUuid =                       '5b8d0000-6f20-11e4-b116-123b93f75cba';
-  // Power Service - Characteristics
-  var pwmUuid =                                '5b8d0001-6f20-11e4-b116-123b93f75cba';
-  var sampleCurrentUuid =                      '5b8d0002-6f20-11e4-b116-123b93f75cba';
-  var currentCurveUuid =                       '5b8d0003-6f20-11e4-b116-123b93f75cba';
-  var currentConsumptionUuid =                 '5b8d0004-6f20-11e4-b116-123b93f75cba';
-  var currentLimitUuid =                       '5b8d0005-6f20-11e4-b116-123b93f75cba';
-
-  $scope.interval = false;
-
-  $scope.oldData = "";
-  
-
-
-  /*
-   * Notification if an area is busy
-   */
-  $scope.Notify = function() {
-    // Check if a message was sent
-
-    // Check nearby employees
-
-    // Show message
-
-    console.log("De slaapkamer afdeling kan wat hulp gebruiken");
-  }
-
-  // setInterval($scope.Notify, 2000);
-
-  $scope.writePWM = function(address, value, successCB, errorCB) {
-    var u8 = new Uint8Array(1);
-    u8[0] = value;
-    var v = $BLE.BytesToEncodedString(u8);
-    console.log("Write " + v + " at service " + powerServiceUuid + ' and characteristic ' + pwmUuid + ' to address ' + address);
-    var paramsObj = {"address": address, "serviceUuid": powerServiceUuid, "characteristicUuid": pwmUuid , "value" : v};
-    $BLE.Write(function(obj) { // write success
-        if (obj.status == 'written') {
-          console.log('Successfully written to pwm characteristic - ' + obj.status);
-
-          if (successCB) successCB();
-        } else {
-          console.log('Writing to pwm characteristic was not successful' + obj);
-
-          if (errorCB) errorCB();
-        }
-      },
-      function(obj) { // write error
-        console.log("Error in writing to pwm characteristic: " + obj.error + " - " + obj.message);
-
-        if (errorCB) errorCB();
-      },
-      paramsObj);
-  }
-
-
-  $scope.ReadEmployee = function() {
-    $BL.Read(function(data) {
-      console.log('Read success');
-      console.log(JSON.stringify(data));
-
-      if(data != "" && data != undefined && data != null && data != "emplyee_busy:false" && data != $scope.oldData) {
-
-        // Change the status
-        $scope.ToggleStatus();
-        $BL.Clear();
-      } else {
-        console.log('data undefined');
-      }
-    }, function(data) {
-      console.log('Read fail, turn on lamp');
-      console.log(JSON.stringify(data));
-      
-      // Turn on
-      $scope.TurnOn();
-
-      $statusBtn.removeClass('status-busy');
-      $statusBtn.addClass('status-ready');
-      $statusBtn.html('Je bent beschikbaar');
-    });
-
-    // Clear the previous interval
-    clearInterval($scope.interval);
-
-    // if($BL.inConnected) {
-      console.log('reading again');
-      // Read again after 1 second
-      $scope.interval = window.setInterval($scope.ReadEmployee, 2000);
-    // }
-  }
-
-  $scope.PairEmployee = function() {
-    // connect and subscribe to arduino
-
-  // $BLE.Connect(function(data) { // Connect pending / success
-  //   console.log('connect');
-  // }, function(data) { // Failed to connect
-  //   if(data.error == 'connect') {
-  //     // connection error, will attempt reconnect
-  //     console.log('connection failed, reconnecting...');
-  //   } else {
-  //     console.log('connection failed');
-  //     // connection error
-  //   }
-  // }, 'FD:48:E6:0E:D6:EE'); // 'CE:9E:48:0E:7C:52' = crownstone
-
-    $BLE.Subscribe(function(data) {
-      console.log(data.status);
-
-      if(data.status == 'subscribedResult') {
-        $scope.ToggleStatus();
-      }
-    }, function(data) {
-      console.log('subscribe failed');
-    }, {
-      "address": 'FD:48:E6:0E:D6:EE',
-      "serviceUuid": "00002220-0000-1000-80000-00805f9b34fb",
-      "characteristicUuid": "00002221-0000-1000-80000-00805f9b34fb",
-      "isNotification" : true
-    });
-
-    // // loop read
-    // console.log('Pair employee');
-    // $BL.Init(function(data) {
-
-    //   console.log('employee init');
-    //   if( ! $BL.IsConnected()) {
-    //     console.log('employee not connected');
-
-    //     $BL.Connect('', function(data) {
-    //       console.log('employee connect');
-
-    //       $scope.ReadEmployee();
-          
-    //     }, function(data) {
-    //         console.log('empolyee connect fail');
-    //       // connect error
-    //     });
-    //   } else {
-    //     console.log('empolyee connected');
-
-    //     $scope.ReadEmployee();
-    //   }
-    // }, function(data) {
-    //   // init fail
-    // });
-  }
-
-  /*
-   * Toggle the status
-   */
-  $scope.ToggleStatus = function() {
-    var $statusBtn = $('#status-btn');
-
-    if($statusBtn.hasClass('status-ready')) {
-      $statusBtn.removeClass('status-ready');
-      $statusBtn.addClass('status-busy');
-      $statusBtn.html('Je bent bezig');
-
-      $scope.TurnOff();
-    } else {
-      $statusBtn.removeClass('status-busy');
-      $statusBtn.addClass('status-ready');
-      $statusBtn.html('Je bent beschikbaar');
-
-      $scope.TurnOn();
-    }
-  }
-
-  /*
-   * Turn the light on
-   */
-  $scope.TurnOn = function() {
-    // $BLE.Init(function() {
-      $scope.writePWM('CE:9E:48:0E:7C:52', 255, function() {
-        console.log('written 255');
-      }, function() {
-          console.log('failed to write 255');
-      });
-    // });
-  }
-
-  /*
-   * Turn the light off
-   */
-  $scope.TurnOff = function() {
-    // $BLE.Init(function() {
-      $scope.writePWM('CE:9E:48:0E:7C:52', 0, function() {
-        console.log('written 0');
-      }, function() {
-          console.log('failed to write 0');
-      });
-    // });
-  }
-})
-
-
-
-// PRODUCT CONTROLLER ------------------------------------------------------------------------------------------------------ 
-
-
-.controller('productCtrl', function($scope, $BLE, $notice) {
-
-  $scope.chosenColor = 'red';
-
-  // Connect to the target crownstone and power the lamp
-
-  var connected = false;
-  var connecting = false;
-  var connectInterval;
-  $scope.connect = function(crownstone) {
-    if(!(connected || connecting)) {
-      connecting = true;
-
-      // var paramsObj = {"address": crownstone.address};
-      var paramsObj = {"address": 'CE:9E:48:0E:7C:52'};
-
-      $BLE.StopScan();
-      $BLE.Disconnect();
-
-      $BLE.Connect(function(data, toggle) { // Connect pending / success
-        connecting = false;
-
-        if(data.status == 'connected') {
-          connected = true;
-          clearInterval(connectInterval);
-
-          console.log('connected');
-
-
-          // Discover services --------------------------------------------------------
-          $scope.discoverServices(function(obj) {
-            // obj.services // array
-            // serviceUuid, characteristicUuid
-            if(obj.status == 'discovered') {
-              console.log('discovering services success');
-
-              console.log(JSON.stringify(obj.services));
-
-
-              var services = obj.services;
-              for (var i = 0; i < services.length; ++i) {
-                var serviceUuid = services[i].serviceUuid;
-                var characteristics = services[i].characteristics;
-                for (var j = 0; j < characteristics.length; ++j) {
-                  var characteristicUuid = characteristics[j].characteristicUuid;
-                  console.log("Found service " + serviceUuid + " with characteristic " + characteristicUuid);
-
-                  if (serviceUuid == powerServiceUuid) {
-                    if (characteristicUuid == pwmUuid) {
-                      console.log('Able to sent power');
-
-                      // Color meesturen?
-
-                      if(toggle === true) {
-                        $scope.writePWM(address, 255, function() {
-                          console.log('written 255');
-                        }, function() {
-                            console.log('failed to write 255');
-                        });
-                      } else {
-                        $scope.writePWM(address, 0, function() {
-                          console.log('written 0');
-                        }, function() {
-                            console.log('failed to write 0');
-                        });
-                      }
-
-
-                    }
-                  }
-                }
-              }
-            } else {
-              console.log('failed to discover services');
-            }
-          }, function(obj) {
-            console.log('discovering services error: ' + obj.error + ' message: ' + obj.message);
-          }, paramsObj.address);
-          
-        } else if(data.status == 'connecting') {
-          // connecting
-        } else {
-          connected = false;
-          $BLE.Disconnect();
-        
-          // connect timed out, will attempt reconnect
-          console.log('connection timed out, reconnecting...');
-          // $scope.connect(crownstone);
-          return;
-        }
-      
-      }, function(data) { // Failed to connect
-        connecting = false;
-        connected = false;
-        $BLE.Disconnect();
-
-        if(data.error == 'connect') {
-          // connection error, will attempt reconnect
-          console.log('connection failed, reconnecting...');
-
-          setTimeout(function() {
-            $scope.connect(crownstone);
-          }, 2000);
-          return;
-        } else {
-          console.log('connection failed');
-          // connection error
-        }
-
-      }, paramsObj.address); // 'CE:9E:48:0E:7C:52' = crownstone
-    }
-  }
-
-  // Power Service
-  var powerServiceUuid =                       '5b8d0000-6f20-11e4-b116-123b93f75cba';
-  // Power Service - Characteristics
-  var pwmUuid =                                '5b8d0001-6f20-11e4-b116-123b93f75cba';
-  var sampleCurrentUuid =                      '5b8d0002-6f20-11e4-b116-123b93f75cba';
-  var currentCurveUuid =                       '5b8d0003-6f20-11e4-b116-123b93f75cba';
-  var currentConsumptionUuid =                 '5b8d0004-6f20-11e4-b116-123b93f75cba';
-  var currentLimitUuid =                       '5b8d0005-6f20-11e4-b116-123b93f75cba';
-
-  $scope.writePWM = function(address, value, successCB, errorCB) {
-    var u8 = new Uint8Array(1);
-    u8[0] = value;
-    var v = $BLE.BytesToEncodedString(u8);
-    console.log("Write " + v + " at service " + powerServiceUuid + ' and characteristic ' + pwmUuid + ' to address ' + address);
-    var paramsObj = {"address": address, "serviceUuid": powerServiceUuid, "characteristicUuid": pwmUuid , "value" : v};
-    $BLE.Write(function(obj) { // write success
-        if (obj.status == 'written') {
-          console.log('Successfully written to pwm characteristic - ' + obj.status);
-
-          if (successCB) successCB();
-        } else {
-          console.log('Writing to pwm characteristic was not successful' + obj);
-
-          if (errorCB) errorCB();
-        }
-      },
-      function(obj) { // write error
-        console.log("Error in writing to pwm characteristic: " + obj.error + " - " + obj.message);
-
-        if (errorCB) errorCB();
-      },
-      paramsObj);
-  }
-
-  $scope.discoverServices = function(s, f, address) {
-    $BLE.DiscoverServices(s, f, address);
-  }
-
-  $scope.color = function() {
-
-    $('#color-picker').fadeToggle(200);
-  },
-
-  $scope.setColor = function(color, $event) {
-    $scope.chosenColor = color;
-    $('.color-picker-toggle').css('backgroundColor', color);
-    $('#color-picker').fadeOut(200);
-  },
-
-  $scope.onToggle = function(value) {
-
-    var $lampBtn = $('#lamp-btn');
-
-    var colorvalue;
-    if($scope.chosenColor == 'red') {
-      colorvalue = 'rode';
-    } else if($scope.chosenColor == 'blue') {
-      colorvalue = 'blauwe';
-    } else if($scope.chosenColor == 'green') {
-      colorvalue = 'groene';
-    } else if($scope.chosenColor == 'yellow') {
-      colorvalue = 'gele';
-    }
-
-    if($lampBtn.data('toggle') == true) {
-      $lampBtn.data('toggle', false);
-      $lampBtn.addClass('lamp-btn-off').removeClass('lamp-btn-on').html('Lamp');
-
-      $BLE.Init(function() {
-        $scope.writePWM('CE:9E:48:0E:7C:52', 0, function() {
-          console.log('written 0');
-        }, function() {
-            console.log('failed to write 0');
-        });
-      });
-
-      $notice.show('Je hebt de lamp uitgezet');
-    } else {
-      $lampBtn.data('toggle', true);
-      $lampBtn.addClass('lamp-btn-on').removeClass('lamp-btn-off').html('Lamp');
-      
-      $BLE.Init(function() {
-        $scope.writePWM('CE:9E:48:0E:7C:52', 255, function() {
-          console.log('written 255');
-        }, function() {
-            console.log('failed to write 255');
-        });
-      });
-
-      $notice.show('Je hebt een ' + colorvalue + ' lamp aangezet');
-    }
-  }
-})
-
-
-
-
-
-
-
-
-
-
-
-
-/* ------------------------------------------------------------------------------------------------- */
-/* ------------------------------------------------------------------------------------------------- */
-/* ------------------------------------------------------------------------------------------------- */
-/* ------------------------------------------------------------------------------------------------- */
-/* ------------------------------------------------------------------------------------------------- */
-/* ------------------------------------------------------------------------------------------------- */
-/* ------------------------------------------------------------------------------------------------- */
-
-
-.controller('debugCtrl', function($scope, $BLE, $compile, $BL) {
+.controller('startCtrl', function($scope, $rootScope, $compile, $BLE, $location) {
 
   // LIFECYCLE
   // ---------
@@ -705,292 +12,466 @@ angular.module('controllers', [])
   // disconnect
   // close
 
-  $scope.address = '6C:71:D9:9D:64:EE';
+  // Is trace connected
+  $scope.connected = true;
 
-  $scope.status = function(message) {
-      document.getElementById('status').innerHTML = message;
+  // Was a session started
+  $scope.session = false;
+
+  $scope.init = function() {
+    
   }
 
-  $scope.Init = function() {
-    $BLE.Init(function(o) {
-      console.log('Properly connected to BLE chip');
-      $scope.status(o.message);
+  $scope.$on('$ionicView.loaded', function(event) {
+    $scope.stopSession();
+  });
 
-      console.log(JSON.stringify(o));
-    }, function(o) {
-      console.log('Failed to connect to BLE chip');
-      console.log(JSON.stringify(o));
-    });
-  },
+  $scope.connectTrace = function() {
 
-  $scope.StartScan = function(callback) {
-    // $BLE.StopScan(function(o) {
-    //   console.log('Scan stopped successful');
-    //   $scope.status(o.message);
+    // Connect
+    
+    $scope.connected = true;
+    
+    $location.path('/dashboard');
+  }
 
-    //   console.log(JSON.stringify(o));
-    // }, function(o) {
-    //   console.log('Scan stopped failed');
-    //   $scope.status(o.message);
-
-    //   console.log(JSON.stringify(o));
+  $scope.startSession = function() {
+      
+    // $BLE.Init(function() {
+    //   $scope.connect({
+    //     'address': 'C1:15:52:B4:AA:BA'
+    //   });
     // });
 
-    /*
-      {
-        "status": "scanStarted"
-      }
-
-      {
-        "status": "scanResult",
-        "advertisement": "awArG05L",
-        "rssi": -58,
-        "name": "Polar H7 3B321015",
-        "address": "ECC037FD-72AE-AFC5-9213-CA785B3B5C63"
-      }
-    */
-    $BLE.StartScan(function(obj) {
-      callback(); // callback normaal alleen in success
-
-      if (obj.status == 'scanResult') {
-          console.log('scan result');
-        } else if (obj.status == 'scanStarted') {
-          console.log('Endless scan was started successfully');
-        } else {
-          console.log('Unexpected start scan status: ' + obj.status);
-          console.log('Stopping scan');
-          $BLE.StopScan();
-        }
-      },
-      function(obj) { // start scan error
-        console.log('Scan error', obj.status);
-        $BLE.StopScan();
-      },
-      {});
-  },
-
-  /*
-   * Stop scanning
-   */
-  $scope.StopScan = function() {
-    $BLE.StopScan(function(o) {
-      console.log('Scan stopped');
-    }, function(o) {
-      console.log('Scan failed to stop');
-    });
-  },
-
-  /*
-     {
-      "address": "00:22:D0:3B:32:10",
-      "status": "discovered",
-      "services": [
-        {
-          "characteristics": [
-            {
-              "descriptors": [
-
-              ],
-              "characteristicUuid": "2a00",
-              "properties": {
-                "write": true,
-                "writeWithoutResponse": true,
-                "read": true
-              }
-            },
-          ]
-        }
-      ]
-    }
-  */
-  $scope.Discover = function(addressObj) {
-    $BLE.Discover(function(o) {
-      console.log('Discover successful');
-
-      console.log(JSON.stringify(o));
-
-      var html = '';
-      for(item in o) {
-        html += '<li>Name: ' + item.name + '</li>';
-      }
-      
-      document.getElementById('list').innerHTML = html;
-    }, function(o) {
-      console.log('Discover failed');
-
-      console.log(JSON.stringify(o));
-    }, addressObj);
-  },
-
-  
-    [
-      {
-        "name": "Polar H7 3B321015",
-        "address": "ECC037FD-72AE-AFC5-9213-CA785B3B5C63"
-      }
-    ]
-   
-  $scope.RetrieveConnected = function() {
-    $BLE.RetrieveConnected(function(o) {
-      console.log('Retrieve connected successful');
-      $scope.status(o.message);
-
-      $('#connected-list').html('');
-
-      for(var i=0; i<o.length; i++) {
-        $el = $('<li>' + o[i].name + ' ' + o[i].address + ' <button class="btn connect-btn" data-ng-click="AddressClick($event)" data-address="' + o[i].address + '">Select</button></li>').appendTo('#connected-list');
-        $compile($el)($scope);
-      }
-
-      console.log(JSON.stringify(o));
-    }, function(o) {
-      console.log('Retrieve connected failed');
-      $scope.status(o.message);
-      
-      console.log(JSON.stringify(o));
-    });
-  },
-
-  /*
-    {
-      "name": "Polar H7 3B321015",
-      "address": "ECC037FD-72AE-AFC5-9213-CA785B3B5C63",
-      "status": "connecting" / "connected" / "diconnected"
-    }
-   */
-
-   // timeout toevoegen
-  $scope.Connect = function() {
-    var timeout = 5000;
-
-    $BLE.Connect(function(o) {
-      console.log('Connect successful');
-      
-      console.log(JSON.stringify(o));
-
-      return o;
-    }, function(o) {
-      console.log('Connect failed');
-      
-      console.log(JSON.stringify(o));
-
-      return o;
-    }, $scope.address);
-
-    var timer = setTimeout(function() {
-      return false;
-    }, timeout);
-  },
-
-  $scope.Disconnect = function() {
-    $BLE.Disconnect(function(o) {
-      console.log('Disconnect successful');
-      
-      console.log(JSON.stringify(o));
-    }, function(o) {
-      console.log('Disconnect failed');
-      
-      console.log(JSON.stringify(o));
-    }, $scope.address);
-  },
-
-  $scope.Reconnect = function() {
-    $BLE.Reconnect(function(o) {
-      console.log('Reconnect successful');
-      console.log(JSON.stringify(o));
-    }, function(o) {
-      console.log('Reconnect failed');
-
-      console.log(JSON.stringify(o));
-    }, $scope.address);
-  },
-
-  $scope.IsConnected = function(addressObj) {
-    console.log(JSON.stringify($BLE.IsConnected(addressObj)));
-  },
-
-  $scope.Close = function() {
-    $BLE.Close(function(o) {
-      console.log('Close successful');
-      
-      console.log(JSON.stringify(o));
-    }, function(o) {
-      console.log('Close failed');
-      
-      console.log(JSON.stringify(o));
-    }, $scope.address);
-  },
-
-
-
-  /*
-   * When the connect button is pressed for an address
-   */
-  $scope.AddressClick = function($event) {
-    var address = $($event.target).data('address');
-
-    $scope.address = address;
-  },
-
-
-
-  $scope.InitBL = function() {
-    $BL.Init(function(data) {
-
-    }, function(data) {
-
-    });
-  },
-
-  /*
-   * Connect, voor button pair medewerker
-   */
-  $scope.ConnectBL = function() {
-    $BL.Connect('', function(data) {
-
-    }, function(data) {
-
-    });
-  },
-
-  $scope.WriteBL = function() {
-    $BL.Write('', function(data) {
-
-    }, function(data) {
-
-    });
-  },
-
-  $scope.ReadBL = function() {
-    $BL.Read(function(data) {
-      // update status van medewerker
-    }, function(data) {
-      // set status op beschikbaar
-    });
-  },
-
-  $scope.ListBL = function() {
-    $BL.List(function(data) {
-
-    }, function(data) {
-
-    });
-  },
-
-  $scope.SubscribeBL = function() {
-    console.log('Subscribing...')
-    $BL.Subscribe(function(data) {
-
-    }, function(data) {
-
-    });
-  },
-
-  $scope.DiscoverUnpairedBL = function() {
-    $BL.DiscoverUnpaired(function(data) {
-
-    }, function(data) {
-
-    });
+    $rootScope.$emit('startSession');
+    $scope.session = true;
   }
+
+  $scope.stopSession = function() {
+    $rootScope.$emit('stopSession');
+    $scope.session = false;
+    // $BLE.Disconnect();
+  }
+
+  var connected = false;
+  var connecting = false;
+  var connectInterval;
+  $scope.connect = function(device) {
+    if(!(connected || connecting)) {
+      connecting = true;
+
+      $BLE.Connect(function(data) { // Connect pending / success
+        connecting = false;
+
+        if(data.status == 'connected') {
+          connected = true;
+          clearInterval(connectInterval);
+
+          // alert('connected');
+
+          // Alleen voor test power
+            // $scope.writePWM(address, 255, function() {
+            //   console.log('written 255');
+            // }, function() {
+            //   console.log('failed to write 255');
+            // });
+
+          // Alleen voor sprint demo
+          // $scope.watchRssi(paramsObj.address);
+
+
+          // Discover services --------------------------------------------------------
+          $scope.discoverServices(function(obj) {
+            // obj.services // array
+            // serviceUuid, characteristicUuid
+            if(obj.status == 'discovered') {
+              alert('discovering services success');
+
+              alert(JSON.stringify(obj.services));
+
+              var services = obj.services;
+              for (var i = 0; i < services.length; ++i) {
+                var serviceUuid = services[i].serviceUuid;
+                var characteristics = services[i].characteristics;
+                for (var j = 0; j < characteristics.length; ++j) {
+                  var characteristicUuid = characteristics[j].characteristicUuid;
+                  // alert("Found service " + serviceUuid + " with characteristic " + characteristicUuid);
+
+                  if (serviceUuid == $BLE.UARTServiceUUID && characteristicUuid == $BLE.RXCharacteristicUUID) {
+                      alert('Able to read');
+
+                      var readObj = {
+                        'address': device.address,
+                        'service': serviceUuid,
+                        'characteristic': characteristicUuid
+                      };
+
+                      alert(JSON.stringify(readObj));
+
+                      $scope.subscribe(readObj);
+                  }
+                }
+              }
+            } else {
+              console.log('failed to discover services');              
+            }
+          }, function(obj) {
+            console.log('discovering services error: ' + obj.error + ' message: ' + obj.message);
+          }, device.address);
+          
+        } else if(data.status == 'connecting') {
+          // connecting
+        } else {
+          connected = false;
+          $BLE.Disconnect();
+        
+          // connect timed out, will attempt reconnect
+          alert('connection timed out, reconnecting...');
+          // $scope.connect(crownstone);
+          return;
+        }
+      
+      }, function(data) { // Failed to connect
+        connecting = false;
+        connected = false;
+        $BLE.Disconnect();
+
+        if(data.error == 'connect') {
+          // connection error, will attempt reconnect
+          alert('connection failed, reconnecting...');
+
+          // setTimeout(function() {
+          //   $scope.connect(crownstone);
+          // }, 2000);
+          return;
+        } else {
+          alert('connection failed, final');
+          // connection error
+        }
+
+      }, device.address);
+    }
+  }
+
+  $scope.subscribe = function(params) {
+    $BLE.Subscribe(function(data) {
+      alert(JSON.stringify(data));
+    }, function(error) {
+      alert(JSON.stringify(error));
+    }, params);
+  }
+
+  $scope.read = function(params) {
+    $BLE.Read(function(data) {
+      alert(JSON.stringify(data));
+    }, function(error) {
+      alert(JSON.stringify(error));
+    }, params);
+  }
+
+  $scope.discoverServices = function(s, f, address) {
+    $BLE.DiscoverServices(s, f, address);
+  }
+})
+
+.controller('dashboardCtrl', function($scope, $rootScope, $combinations, $BLE, $location, $notice) {  /* ___________________________________________________________________________________________________________ */
+
+  $scope.showMyTricks = true;
+
+  $scope.tricks = [
+    {
+      id: 001,
+      name: 'Kickflip',
+      count: 3,
+      trick: {
+        flip: $combinations.flip.KICKFLIP
+      }
+    },
+    {
+      id: 002,
+      name: 'Heelflip',
+      count: 0,
+      trick: {
+        flip: $combinations.flip.HEELFLIP
+      }
+    },
+    {
+      id: 003,
+      name: 'Pop Shove-it',
+      count: 1,
+      trick: {
+        rotation: $combinations.rotation.HALF,
+        spin: $combinations.spin.BACKSIDE
+      }
+    },
+    {
+      id: 003,
+      name: 'FS Shove-it',
+      count: 0,
+      trick: {
+        rotation: $combinations.rotation.HALF,
+        spin: $combinations.spin.FRONTSIDE
+      }
+    },
+    {
+      id: 004,
+      name: 'Varial kickflip',
+      count: 0,
+      trick: {
+        rotation: $combinations.rotation.HALF,
+        spin: $combinations.spin.BACKSIDE,
+        flip: $combinations.flip.KICKFLIP
+      }
+    },
+    {
+      id: 005,
+      name: 'Varial heelflip',
+      count: 0,
+      trick: {
+        rotation: $combinations.rotation.HALF,
+        spin: $combinations.spin.FRONTSIDE,
+        flip: $combinations.flip.HEELFLIP
+      }
+    },
+    {
+      id: 006,
+      name: 'Hardflip',
+      count: 0,
+      trick: {
+        rotation: $combinations.rotation.HALF,
+        spin: $combinations.spin.FRONTSIDE,
+        flip: $combinations.flip.KICKFLIP
+      }
+    },
+    {
+      id: 007,
+      name: 'Inward heelflip',
+      count: 0,
+      trick: {
+        rotation: $combinations.rotation.HALF,
+        spin: $combinations.spin.BACKSIDE,
+        flip: $combinations.flip.HEELFLIP
+      }
+    },
+    {
+      id: 008,
+      name: '360 flip',
+      count: 0,
+      trick: {
+        rotation: $combinations.rotation.FULL,
+        spin: $combinations.spin.BACKSIDE,
+        flip: $combinations.flip.KICKFLIP
+      }
+    },
+    {
+      id: 009,
+      name: '360 heelflip',
+      count: 0,
+      trick: {
+        rotation: $combinations.rotation.FULL,
+        spin: $combinations.spin.FRONTSIDE,
+        flip: $combinations.flip.HEELFLIP
+      }
+    },
+    {
+      id: 010,
+      name: '360 hardflip',
+      count: 0,
+      trick: {
+        rotation: $combinations.rotation.FULL,
+        spin: $combinations.spin.FRONTSIDE,
+        flip: $combinations.flip.KICKFLIP
+      }
+    },
+    {
+      id: 011,
+      name: '360 inward heelflip',
+      count: 0,
+      trick: {
+        rotation: $combinations.rotation.FULL,
+        spin: $combinations.spin.BACKSIDE,
+        flip: $combinations.flip.HEELFLIP
+      }
+    }
+  ];
+
+  $scope.board = {
+    x: 0,
+    y: 0,
+    z: 0
+  },
+
+  $scope.simulateInterval = null;
+
+  $scope.init = function() {
+
+    if($BLE.device == null) {
+      $location.path('/');
+    }
+  }
+
+  $rootScope.$on('startSession', function(event) {
+    // Watch rotation
+    // $BLE.subscribe($scope.subscribeSuccess, $scope.subscribeError, {
+    //   'address': 'C1:15:52:B4:AA:BA',  // device.address = 'C1:15:52:B4:AA:BA'
+    //   'service': $BLE.UARTServiceUUID,
+    //   'characteristic': $BLE.RXCharacteristicUUID
+    // });
+
+    // Simulate rotation
+    $scope.simulate($scope.subscribeSuccess);
+  });
+
+  $rootScope.$on('stopSession', function(event) {
+    $scope.stopSimulate();
+  });
+
+  $scope.simulate = function(fn) {
+    var step = 60,
+          x = 0,
+          y = 0;
+
+    // simulate a random trick every 5 seconds
+    $scope.simulateInterval = setInterval(function() {
+      var stepX,
+          stepY;
+
+      // Get random rotation on the X axis
+      var random = Math.random();
+      if(random > 0.5) {
+        stepX = 0;
+      } else {
+        stepX = 60;
+      }
+
+      // Get random rotation on the Y axis
+      random = Math.random();
+      if(random > 0.6) {
+        stepY = 0;
+      } else if(random > 0.3) {
+        stepY = 30;
+      } else {
+        stepY = 60;
+      }
+
+      // Get random direction
+      var directionX = Math.random() < 0.5 ? -1 : 1;
+      var directionY = Math.random() < 0.5 ? -1 : 1;
+
+      // Simulate rotation every 100ms
+      var interval = setInterval(function() {
+        x += stepX * directionX;
+        y += stepY * directionY;
+
+        fn({
+          x: x,
+          y: y
+        });
+
+        if(Math.abs(x) >= $combinations.endpoints.x ||
+           Math.abs(y) >= $combinations.endpoints.y) {
+          x = 0;
+          y = 0;
+          clearInterval(interval);
+        }
+      }, 100);
+    
+    }, 5000);
+  }
+
+  $scope.stopSimulate = function() {
+    clearInterval($scope.simulateInterval);
+  }
+
+  $scope.subscribeSuccess = function(data) {
+      if(data.x != 0 || data.y != 0)
+        console.log(JSON.stringify(data));
+
+      // Wanneer start een trick? -> beweging vanaf ruststand
+      // leg je skateboard op de grond voordat je connect
+      // ruststand direct meesturen met connect
+
+      var trick = {};
+
+      // Get directions
+      trick.flip = (data.x > $scope.board.x) ? $combinations.flip.KICKFLIP : $combinations.flip.HEELFLIP;
+      trick.spin = (data.y > $scope.board.y) ? $combinations.spin.FRONTSIDE : $combinations.spin.BACKSIDE;
+
+      // Get rotation
+      if(Math.abs(data.y) > ($combinations.endpoints.y / 2) - $combinations.endpoints.margin &&
+         Math.abs(data.y) < ($combinations.endpoints.y / 2) + $combinations.endpoints.margin)
+      {
+        trick.rotation = $combinations.rotation.HALF;
+      }
+      else if(Math.abs(data.y) > ($combinations.endpoints.y) - $combinations.endpoints.margin &&
+              Math.abs(data.y) < ($combinations.endpoints.y) + $combinations.endpoints.margin)
+      {
+        trick.rotation = $combinations.rotation.FULL;
+      }
+
+      // Update board
+      $scope.board.x = data.x;
+      $scope.board.y = data.y;
+
+      if(Math.abs(data.x) >= $combinations.endpoints.x) { // Full flip
+        console.log('full flip');
+
+        // Remove spin if there is no rotation
+        if(trick.rotation == null) {
+          delete trick.spin;
+        }
+
+        // Is het skateboard weer op zijn wielen?
+
+        console.log('trick complete');
+        $scope.addTrick(trick);
+      }
+  }
+
+  $scope.subscribeError = function(error) {
+      alert(JSON.stringify(error));
+  }
+
+  $scope.addTrick = function(trick) {
+    // console.log(trick);
+
+    for(var i=0; i<$scope.tricks.length; i++) {
+      console.log(trick);
+      console.log($scope.tricks[i].trick);
+      
+      if(angular.equals(trick, $scope.tricks[i].trick)) {
+        $scope.tricks[i].count++;
+        $scope.$apply();
+        console.log($scope.tricks[i]);
+
+        $notice.show("You've landed a " + $scope.tricks[i].name);
+
+        $rootScope.$emit('checkMedal', { id: $scope.tricks[i].id });
+
+        break;
+
+        // Refresh trick list
+      }
+    }
+  }
+})
+
+.controller('medalsCtrl', function($scope, $rootScope, $notice) {  /* ___________________________________________________________________________________________________________ */
+
+  $scope.medals = {
+    "1": "Do 3 kickflips today",
+    "8": "360 degrees (do a 360 flip)"
+  };
+
+  $scope.init = function() {
+
+  }
+
+  $rootScope.$on('checkMedal', function(event, args) {
+    var medal = $scope.medals[args.id];
+
+    if(medal != null) {
+      $notice.success("You've earned a badge: " + medal);
+    }
+  });
 });

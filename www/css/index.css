@@ -1,3 +1,6 @@
+* {
+    box-sizing: border-box;
+}
 
 body {
     background-color: #eeeeee;
@@ -18,24 +21,171 @@ hr {
 }
 
 
-
-
-
-/* IKEA blue: #003399; */
-/* IKEA yellow: #FFCC00; */
-
-.light-bulb {
-    width: 100%;
-    height: 600px;
+ol, ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.hidden {
+    display: none !important;
+}
+.pull-left {
+    float: left !important;
+}
+.pull-right {
+    float: right !important;
+}
+.push-down {
+    margin-bottom: 10px;
+}
+.pull-down {
+    margin-top: 10px;
+}
+.clear {
+    clear: both;
+}
+.fa {
+    font-family: FontAwesome;
+    margin-right: 4px;
+}
+.icon {
+    width: 30px;
+    height: 30px;
+    background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    background-image: url('../lib/ionic/img/lightbulb_off.png');
+    background-size: 30px;
 }
-.light-bulb-on {
-    background-image: url('../lib/ionic/img/lightbulb_on.png');
-
+.icon.icon-large {
+    background-size: 40px;
+}
+.icon.icon-medium {
+    background-size: 20px;
+}
+.icon.icon-small {
+    background-size: 10px;
 }
 
+.bar-stable .button {
+    color: #A5D3E6;
+    border-color: #A5D3E6;
+}
+
+/* PAGE __________________________________________________________________________________________________________________________________________________________________ */
+.page {
+    background: #ffffff;
+}
+.page-title {
+    padding: 12px;
+    margin: 0;
+    color: #A5D3E6;
+}
+
+.connect-btn {
+    width: 200px;
+    height: 200px;
+    margin: 150px auto;
+    font-size: 30px;
+    padding: 76px 10px;
+    text-align: center;
+    display: block;
+    border-radius: 50%;
+    border: 4px solid #A5D3E6;
+    color: #609AB3;
+}
+    .connect-btn span {
+        margin-top: 8px;
+        display: block;
+    }
+
+
+/* ACTION BAR __________________________________________________________________________________________________________________________________________________________________ */
+.action-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 57px;
+    background: #ffffff;
+    border-top: 1px solid #dbdbdb;
+    overflow: hidden;
+    z-index: 1000;
+}
+    .action-bar-item {
+        float: left;
+        width: 25%;
+        text-align: center;
+        padding: 14px 0;
+        box-sizing: initial;
+    }
+        .profile-icon {
+            background-image: url('../img/boy.png');
+        }
+        .write-review-icon {
+            background-image: url('../img/medal.png');
+        }
+        .ranking-icon {
+            background-image: url('../img/podium.png');
+        }
+        .search-icon {
+            background-image: url('../img/magnifying-glass.png');
+        }
+
+/* MENU __________________________________________________________________________________________________________________________________________________________________ */
+.menu ion-content {
+    background-color: #ffffff;
+}
+
+.menu-btn {
+    font-size: 30px !important;
+    margin: 8px 10px;
+    color: #A5D3E6;
+}
+
+.bar-stable .button {   /* Back btn */
+    background: #ffffff;
+}
+
+
+/* TRICKS __________________________________________________________________________________________________________________________________________________________________ */
+.trick-list-tabs {
+    border-top: 1px solid #dbdbdb;
+}
+    .trick-list-tabs li {
+        width: 50%;
+        padding: 10px;
+        float: left;
+        text-align: center;
+        text-transform: uppercase;
+        background: #f9f9f9;
+    }
+        .trick-list-tabs > li:first-child {
+            border-right: 1px solid #dbdbdb;
+        }
+        .trick-list-tabs > li.active {
+            background: #ffffff;
+            border-bottom: 1px solid #ffffff;
+        }
+        .trick-list-tabs > li:not(.active) {
+            border-bottom: 1px solid #dbdbdb;
+        }
+.trick-list li {
+    padding: 10px 20px;
+    overflow: hidden;
+    border-bottom: 1px solid #f1f1f1;
+}
+    .trick-list li:last-child {
+        /*border-bottom: 0;*/
+    }
+    .trick-list li .name, .trick-list li .counter {
+        text-transform: uppercase;
+    }
+    .trick-list li .name {
+        float: left;
+    }
+    .trick-list li .counter {
+        float: right;
+    }
 
 #genres{
     font-size: 20px;
@@ -87,7 +237,6 @@ hr {
     font-family: "arial black";
 }
 .logo{
-    width: 6em;
     height: 3.3em;
     margin-left: 4px;
 }
@@ -155,18 +304,18 @@ a{
 
     .color-picker {
         display: none;
-        width: 200px;
-        margin-left: -100px;
+        width: 220px;
         padding: 6px;
-        position: absolute;
-        top: 40px;
-        left: 50%;
         background-color: rgba(255, 255, 255, 0.8);
-        box-shadow: 0 0 20px #000;
+        box-shadow: 0 0 4px #000;
+        margin-left: -110px;
+        position: absolute;
+        top: 100px;
+        left: 50%;
     }
         .color {
-            width: 80px;
-            height: 80px;
+            width: 40px;
+            height: 40px;
             margin: 6px;
             float: left;
         }
@@ -266,6 +415,11 @@ select .color {
     height: 48px;
 }
 
+.bar {
+    height: 58px;
+    background: #ffffff !important;
+}
+
 
 /* TOGGLE */
 .toggle-small .track {
@@ -357,7 +511,7 @@ select .color {
 
 /* HEADER ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 #header {
-    height: 44px;
+    height: 58px;
     position: relative;
 
     text-align: center;
@@ -384,8 +538,6 @@ select .color {
         right: 4px;
     }
 
-
-
 /* MENU ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 #menu-panel {
     border-right: 1px solid #dbdbdb;    
@@ -393,15 +545,22 @@ select .color {
 
     #menu-list {
     	padding: 40px 0 10px;
-        margin: 0;
-
-    	text-align: center;
-        
+        margin: 0;   
         list-style: none;
     }
-    #menu-list li {
-        padding: 10px;
-    }
+        #menu-list li {
+            padding: 8px 20px;
+        }
+        #menu-list li.menu-section-header {
+            padding: 12px 20px 4px;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #A5D3E6;
+        }
+        #menu-list li.menu-section-header .fa {
+            margin-right: 10px;
+        }
 
 
 /* SETTINGS ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */
@@ -504,7 +663,6 @@ select .color {
 #notice {
     width: 300px;
 
-    margin-top: 10px;
     margin-left: -150px;
     
     text-align: center;
@@ -513,7 +671,7 @@ select .color {
     box-sizing: border-box;
     
     position: fixed;
-    top: 20%;
+    top: 8%;
     left: 50%;
 
     z-index: 10000;
@@ -530,6 +688,13 @@ select .color {
 
     display: none;
 }
+    #notice.notice-success {
+        background-color: rgba(106, 179, 96, 0.8);
+        border-color: rgba(249, 237, 190, 1);
+    }
+    #notice.notice-success div {
+        color: #ffffff;
+    }
     #notice div {
         padding: 10px;
     }
@@ -747,6 +912,41 @@ input[type=radio]:checked + .radio {
 .input-error {
     box-shadow: 0 0 12px red !important;
 }
+
+label {
+    cursor: pointer;
+    color: #666666;
+}
+
+input[type=checkbox] {
+    display: none;
+}
+
+input[type=checkbox] + span:before {
+    margin-right: 5px;
+    content: "\f096";
+    font-family: "FontAwesome";
+    speak: none;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    font-size: 30px;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    width: 1em;
+    display: inline-block;
+    position: relative;
+    top: 6px;
+}
+
+input[type=checkbox]:checked + span:before {
+    /*content: "\f00c";*/
+    content: "\f14a";
+    color: #A5D3E6;
+}
+
+
 
 /* RANGE ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */
 /*.ui-slider-track {
@@ -989,39 +1189,17 @@ input[type=radio]:checked + .radio {
     opacity: 1;
 }
 
-
-/* NOTICES ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */
-#notice {
-    width: 300px;
-
-    margin-left: -150px;
-    
-    text-align: center;
-    color: #444444;
-
-    box-sizing: border-box;
-    
-    position: fixed;
-    top: 8%;
-    left: 50%;
-
-    z-index: 10000;
-
-    /*background-color: rgba(237, 97, 97, 0.8); error*/
-    background-color: rgba(249, 237, 190, 0.8);
-    
-    border: 1px solid #f0c36d;
-    
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-    border-bottom-right-radius: 6px;
-    border-bottom-left-radius: 6px;
-
-    display: none;
+.btn-icon {
+    padding: 8px 10px 8px 0px;
+    line-height: 24px;
 }
-    #notice div {
-        padding: 10px;
-    }
+.btn-icon i {
+    float: left;
+    font-size: 16px;
+    line-height: 24px;
+    margin-left: 14px;
+}
+
 
 
 /* SPINNER ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
